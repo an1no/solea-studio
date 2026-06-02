@@ -1,38 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@300;400;500;600;700;800&display=swap');
-
 :root {
   --background: #fafaf7;
   --foreground: #1c2722;
-  
+
   --card: #ffffff;
   --card-foreground: #1c2722;
-  
+
   --popover: #ffffff;
   --popover-foreground: #1c2722;
-  
+
   --primary: #2d4c3e;
   --primary-foreground: #f4f6f5;
-  
+
   --secondary: #ebf0ec;
   --secondary-foreground: #2d4c3e;
-  
+
   --muted: #f1f3f1;
   --muted-foreground: #607369;
-  
+
   --accent: #c4a470;
   --accent-foreground: #2d4c3e;
-  
+
   --destructive: #df4c4c;
   --destructive-foreground: #ffffff;
-  
+
   --border: #e1e7e3;
   --input: #e1e7e3;
   --ring: #7d9a8b;
-  
+
   --radius: 1rem;
 
   --font-serif: "Playfair Display", Georgia, serif;
@@ -51,7 +51,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif);
 }
 
-/* Custom premium Glassmorphism utilities */
+/* Glassmorphism utilities */
 .glass-panel {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
@@ -66,7 +66,7 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid rgba(45, 76, 62, 0.15);
 }
 
-/* Micro-animations and beautiful inputs */
+/* Micro-animations */
 .animate-fade-in {
   animation: fadeIn 0.8s ease forwards;
 }
@@ -85,7 +85,6 @@ h1, h2, h3, h4, h5, h6 {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Premium gradient accents */
 .gold-glow {
   box-shadow: 0 0 40px -10px rgba(196, 164, 112, 0.2);
 }

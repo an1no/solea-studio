@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function SeedButton() {
   const router = useRouter();
@@ -11,11 +12,8 @@ export default function SeedButton() {
   const handleSeed = async () => {
     setSeeding(true);
     try {
-      const res = await fetch('/api/seed', {
-        method: 'POST'
-      });
+      const res = await fetch('/api/seed', { method: 'POST' });
       if (res.ok) {
-        // Trigger a silent router data refresh
         router.refresh();
       } else {
         alert('Seeding failed. Please verify database availability.');
@@ -29,11 +27,7 @@ export default function SeedButton() {
   };
 
   return (
-    <button
-      onClick={handleSeed}
-      disabled={seeding}
-      className="bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
-    >
+    <Button size="sm" onClick={handleSeed} disabled={seeding} className="rounded-xl">
       {seeding ? (
         <>
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -45,6 +39,6 @@ export default function SeedButton() {
           Seed Demo Data
         </>
       )}
-    </button>
+    </Button>
   );
 }

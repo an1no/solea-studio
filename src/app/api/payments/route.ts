@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 
 export async function POST(request: Request) {
@@ -21,40 +22,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify user exists
-    const user = await db.user.findUnique({
-      where: { id: userId }
-    });
-
+    const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) {
-      return NextResponse.json(
-        { message: 'Member not found.' },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: 'Member not found.' }, { status: 404 });
     }
 
-    // Update due date: exactly 1 month from current transaction date
+    // Extend due date exactly 1 month from today
     const updatedDueDate = new Date();
     updatedDueDate.setMonth(updatedDueDate.getMonth() + 1);
 
-    // Execute in transaction to ensure both operations succeed together
-    const result = await db.$transaction(async (tx) => {
-      // 1. Create payment record
+    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       const payment = await tx.payment.create({
         data: {
           userId,
           amount: parsedAmount,
           notes: notes || null,
-          paymentDate: new Date()
-        }
+          paymentDate: new Date(),
+        },
       });
 
-      // 2. Update user's next payment due date
       const updatedUser = await tx.user.update({
         where: { id: userId },
         data: {
-          nextPaymentDueDate: updatedDueDate
-        }
+          nextPaymentDueDate: updatedDueDate,
+          status: 'Active',
+        },
       });
 
       return { payment, updatedUser };
@@ -64,14 +56,17 @@ export async function POST(request: Request) {
       {
         message: 'Payment successfully logged!',
         payment: result.payment,
-        nextPaymentDueDate: result.updatedUser.nextPaymentDueDate
+        nextPaymentDueDate: result.updatedUser.nextPaymentDueDate,
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Payment API Error:', error);
     return NextResponse.json(
-      { message: 'Internal server error occurred.', error: error.message },
+      {
+        message: 'Internal server error.',
+        error: error instanceof Error ? error.message : 'Unknown',
+      },
       { status: 500 }
     );
   }

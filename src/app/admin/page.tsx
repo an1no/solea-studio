@@ -108,8 +108,8 @@ export default function AdminDashboard() {
               </h3>
               <p className="text-xs text-amber-800/80 leading-relaxed max-w-2xl font-light">
                 {lang === 'en'
-                  ? "The Solea Portal is offline because Next.js could not connect to SQLite file."
-                  : "სოლეას ადმინისტრაციული პანელი ოფლაინ რეჟიმშია, რადგან სისტემა ვერ უკავშირდება SQLite ფაილს."}
+                  ? "The Solea Portal is offline because Next.js could not connect to the PostgreSQL database."
+                  : "სოლეას ადმინისტრაციული პანელი ოფლაინ რეჟიმშია, რადგან სისტემა ვერ უკავშირდება PostgreSQL მონაცემთა ბაზას."}
               </p>
             </div>
           </div>

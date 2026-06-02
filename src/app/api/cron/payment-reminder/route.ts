@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getNotifier } from '@/lib/notifier';
-import { sendEmail, getBillingReminderTemplate } from '@/lib/email';
+import { sendEmail, getBillingReminderTemplate, getOverdueNoticeTemplate } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Fetch members due today or in exactly 3 days
-    const members = await db.user.findMany({
+    const dueMembers = await db.user.findMany({
       where: {
         OR: [
           { nextPaymentDueDate: { gte: todayStart, lte: todayEnd } },
@@ -46,18 +46,31 @@ export async function GET(request: NextRequest) {
     });
 
     // Mark due members
-    if (members.length > 0) {
+    if (dueMembers.length > 0) {
       await db.user.updateMany({
-        where: { id: { in: members.map((m: { id: string }) => m.id) } },
+        where: { id: { in: dueMembers.map((m: { id: string }) => m.id) } },
         data: { status: 'Due' },
       });
     }
+
+    // Fetch overdue members
+    const overdueMembers = await db.user.findMany({
+      where: { status: 'Overdue' },
+    });
+
+    // Combine members for processing
+    const members = [
+      ...dueMembers.map((m) => ({ ...m, isOverdue: false })),
+      ...overdueMembers.map((m) => ({ ...m, isOverdue: true })),
+    ];
 
     const notifier = getNotifier();
     const report: unknown[] = [];
 
     for (const member of members) {
+      const isOverdue = member.isOverdue;
       const isDueToday =
+        !isOverdue &&
         member.nextPaymentDueDate >= todayStart &&
         member.nextPaymentDueDate <= todayEnd;
 
@@ -66,10 +79,15 @@ export async function GET(request: NextRequest) {
         { month: 'long', day: 'numeric', year: 'numeric' }
       );
 
-      // Georgian-language reminder message
-      const message = isDueToday
-        ? `გამარჯობა, ${member.firstName}! სოლეა სტუდია (${member.branch}) გაგახსენებთ, რომ დღეს არის თქვენი ყოველთვიური წევრობის გადასახადის ვადა. გმადლობთ, რომ პრაქტიკობთ ჩვენთან!`
-        : `გამარჯობა, ${member.firstName}! სოლეა სტუდია (${member.branch}) გაგახსენებთ, რომ 3 დღეში — ${formattedDate} — არის თქვენი ყოველთვიური წევრობის გადასახადის ვადა. გმადლობთ!`;
+      // Georgian-language SMS message
+      let message = '';
+      if (isOverdue) {
+        message = `გამარჯობა, ${member.firstName}! სოლეა სტუდია (${member.branch}) შეგახსენებთ, რომ თქვენი წევრობის გადასახადის ვადა (${formattedDate}) გადაცილებულია. გთხოვთ განაახლოთ პორტალზე.`;
+      } else if (isDueToday) {
+        message = `გამარჯობა, ${member.firstName}! სოლეა სტუდია (${member.branch}) გაგახსენებთ, რომ დღეს არის თქვენი ყოველთვიური წევრობის გადასახადის ვადა. გმადლობთ, რომ პრაქტიკობთ ჩვენთან!`;
+      } else {
+        message = `გამარჯობა, ${member.firstName}! სოლეა სტუდია (${member.branch}) გაგახსენებთ, რომ 3 დღეში — ${formattedDate} — არის თქვენი ყოველთვიური წევრობის გადასახადის ვადა. გმადლობთ!`;
+      }
 
       let status: 'SENT' | 'FAILED' = 'SENT';
       let errorMsg: string | null = null;
@@ -87,13 +105,22 @@ export async function GET(request: NextRequest) {
 
       if (member.email) {
         try {
-          const { html, text: emailText, subject } = getBillingReminderTemplate({
-            firstName: member.firstName,
-            dueDate: member.nextPaymentDueDate.toISOString(),
-            isDueToday,
-            branchName: member.branch === 'Borjomi' ? 'Borjomi' : member.branch === 'Khashuri' ? 'Khashuri' : 'Akhaltsikhe',
-            lang: 'ka',
-          });
+          const emailData = isOverdue
+            ? getOverdueNoticeTemplate({
+                firstName: member.firstName,
+                dueDate: member.nextPaymentDueDate.toISOString(),
+                branchName: member.branch === 'Borjomi' ? 'Borjomi' : member.branch === 'Khashuri' ? 'Khashuri' : 'Akhaltsikhe',
+                lang: 'ka',
+              })
+            : getBillingReminderTemplate({
+                firstName: member.firstName,
+                dueDate: member.nextPaymentDueDate.toISOString(),
+                isDueToday,
+                branchName: member.branch === 'Borjomi' ? 'Borjomi' : member.branch === 'Khashuri' ? 'Khashuri' : 'Akhaltsikhe',
+                lang: 'ka',
+              });
+
+          const { html, text: emailText, subject } = emailData;
 
           await sendEmail({
             to: member.email,
@@ -114,7 +141,7 @@ export async function GET(request: NextRequest) {
         name: `${member.firstName} ${member.lastName}`,
         phone: member.phone,
         email: member.email,
-        type: isDueToday ? 'DUE_TODAY' : 'DUE_IN_3_DAYS',
+        type: isOverdue ? 'OVERDUE' : (isDueToday ? 'DUE_TODAY' : 'DUE_IN_3_DAYS'),
         smsStatus: status,
         smsError: errorMsg,
         emailStatus,

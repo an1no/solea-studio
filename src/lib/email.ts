@@ -268,3 +268,205 @@ export function getBillingReminderTemplate({
 
   return { html, text, subject };
 }
+
+/**
+ * Returns a premium, responsive HTML email template for overdue notices.
+ */
+export function getOverdueNoticeTemplate({
+  firstName,
+  dueDate,
+  branchName,
+  lang,
+}: {
+  firstName: string;
+  dueDate: string;
+  branchName: string;
+  lang: 'en' | 'ka';
+}): { html: string; text: string; subject: string } {
+  const formattedDate = new Date(dueDate).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  const subject = lang === 'ka'
+    ? `⚠️ გაფრთხილება: თქვენი წევრობის გადასახადის ვადა გადაცილებულია — Solea Studio`
+    : `⚠️ Action Required: Your Membership is Overdue — Solea Studio`;
+
+  const heading = lang === 'ka'
+    ? 'წევრობის გადასახადი ვადაგადაცილებულია'
+    : 'Membership Payment Overdue';
+
+  const bodyText = lang === 'ka'
+    ? `გამარჯობა ${firstName}, შეგახსენებთ, რომ თქვენი ყოველთვიური წევრობის გადასახადის ვადა Solea Studio-ს ${branchName} ფილიალში დასრულდა ${formattedDate}-ში და ამჟამად არის ვადაგადაცილებული.`
+    : `Hello ${firstName}, this is a notification that your monthly membership payment for the Solea Studio ${branchName} branch was due on ${formattedDate} and is now overdue.`;
+
+  const pleaseRenew = lang === 'ka'
+    ? 'გთხოვთ განაახლოთ თქვენი წევრობა რაც შეიძლება მალე, რათა შეინარჩუნოთ წვდომა მეცადინეობებზე.'
+    : 'Please renew your membership as soon as possible to maintain uninterrupted access to classes.';
+
+  const buttonText = lang === 'ka' ? 'წევრობის განახლება' : 'Renew Membership';
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${subject}</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fafaf7;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+          }
+          .wrapper {
+            width: 100%;
+            background-color: #fafaf7;
+            padding: 40px 0;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #e5e5e0;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+          }
+          .header {
+            background-color: #7a3e3e;
+            padding: 40px;
+            text-align: center;
+          }
+          .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f7f7f2;
+            letter-spacing: 0.1em;
+            margin: 0;
+            font-family: Georgia, serif;
+          }
+          .logo-accent {
+            color: #d1b48c;
+          }
+          .content {
+            padding: 40px;
+            color: #2d312e;
+          }
+          .badge {
+            display: inline-block;
+            background-color: #fbebeb;
+            color: #b73b3b;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 6px 16px;
+            border-radius: 100px;
+            margin-bottom: 20px;
+          }
+          .title {
+            font-family: Georgia, serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d312e;
+            margin-top: 0;
+            margin-bottom: 20px;
+            line-height: 1.3;
+          }
+          .body-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #555c56;
+            margin-bottom: 30px;
+          }
+          .details-card {
+            background-color: #fafaf7;
+            border: 1px solid #e5e5e0;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+          }
+          .details-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e5e0;
+          }
+          .details-row:last-child {
+            border-bottom: none;
+          }
+          .details-label {
+            font-size: 13px;
+            color: #7c857e;
+          }
+          .details-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #b73b3b;
+          }
+          .footer {
+            background-color: #fafaf7;
+            padding: 30px 40px;
+            text-align: center;
+            border-top: 1px solid #e5e5e0;
+            font-size: 12px;
+            color: #7c857e;
+          }
+          .footer-links {
+            margin-top: 10px;
+          }
+          .footer-link {
+            color: #7a3e3e;
+            text-decoration: none;
+            margin: 0 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="wrapper">
+          <div class="container">
+            <div class="header">
+              <h1 class="logo">SOLEA <span class="logo-accent">STUDIO</span></h1>
+            </div>
+            <div class="content">
+              <div class="badge">${lang === 'ka' ? 'ვადაგადაცილებული / OVERDUE' : 'Overdue / ვადაგადაცილებული'}</div>
+              <h2 class="title">${heading}</h2>
+              <p class="body-text">${bodyText}</p>
+              
+              <div class="details-card">
+                <div class="details-row">
+                  <span class="details-label">${lang === 'ka' ? 'ფილიალი' : 'Branch'}</span>
+                  <span class="details-value" style="color: #2d312e;">${branchName}</span>
+                </div>
+                <div class="details-row">
+                  <span class="details-label">${lang === 'ka' ? 'გადახდის ვადა' : 'Due Date'}</span>
+                  <span class="details-value">${formattedDate}</span>
+                </div>
+                <div class="details-row">
+                  <span class="details-label">${lang === 'ka' ? 'სტატუსი' : 'Status'}</span>
+                  <span class="details-value" style="font-weight: bold;">${lang === 'ka' ? 'ვადაგადაცილებული' : 'Overdue'}</span>
+                </div>
+              </div>
+              
+              <p class="body-text" style="font-style: italic; margin-bottom: 0;">${pleaseRenew}</p>
+            </div>
+            <div class="footer">
+              <p>© 2026 Solea Studio. All rights reserved.</p>
+              <div class="footer-links">
+                <a href="https://solea-studio-ten.vercel.app/admin" class="footer-link">${buttonText}</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const text = `${heading}\n\n${bodyText}\n\n${pleaseRenew}\n\nBranch: ${branchName}\nDue Date: ${formattedDate}\nStatus: Overdue`;
+
+  return { html, text, subject };
+}

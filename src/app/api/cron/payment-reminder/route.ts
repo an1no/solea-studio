@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getNotifier } from '@/lib/notifier';
+import { sendEmail, getBillingReminderTemplate } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,20 +82,52 @@ export async function GET(request: NextRequest) {
         console.error(`Notification failed for ${member.phone}:`, err);
       }
 
+      let emailStatus: 'SENT' | 'FAILED' | 'SKIPPED' = 'SKIPPED';
+      let emailErrorMsg: string | null = null;
+
+      if (member.email) {
+        try {
+          const { html, text: emailText, subject } = getBillingReminderTemplate({
+            firstName: member.firstName,
+            dueDate: member.nextPaymentDueDate.toISOString(),
+            isDueToday,
+            branchName: member.branch === 'Borjomi' ? 'Borjomi' : member.branch === 'Khashuri' ? 'Khashuri' : 'Akhaltsikhe',
+            lang: 'ka',
+          });
+
+          await sendEmail({
+            to: member.email,
+            subject,
+            html,
+            text: emailText,
+          });
+          emailStatus = 'SENT';
+        } catch (err: unknown) {
+          emailStatus = 'FAILED';
+          emailErrorMsg = err instanceof Error ? err.message : 'Unknown error';
+          console.error(`Email notification failed for ${member.email}:`, err);
+        }
+      }
+
       report.push({
         memberId: member.id,
         name: `${member.firstName} ${member.lastName}`,
         phone: member.phone,
+        email: member.email,
         type: isDueToday ? 'DUE_TODAY' : 'DUE_IN_3_DAYS',
-        notificationStatus: status,
-        error: errorMsg,
+        smsStatus: status,
+        smsError: errorMsg,
+        emailStatus,
+        emailError: emailErrorMsg,
       });
     }
 
     return NextResponse.json({
       processedCount: members.length,
-      notifierMode:
+      smsMode:
         process.env.USE_REAL_SMS === 'true' ? 'GEORGIAN_SMS' : 'CONSOLE',
+      emailMode:
+        process.env.USE_REAL_EMAIL === 'true' ? 'RESEND' : 'CONSOLE',
       timestamp: new Date().toISOString(),
       dispatched: report,
     });
